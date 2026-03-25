@@ -6,6 +6,7 @@ Small utility set for building client subscription URLs from Xray VLESS Reality 
 
 - `import_configs.py`: reads Xray server configs from the `configs/*/config.json` layout and rebuilds `subscriptions.db`.
 - `generate_subscriptions.py`: reads `subscriptions.db` and writes per-client plain-text and base64 subscription files under `subscriptions/`.
+- `create_bypass.py`: interactively appends bypass IP/port variants for all users.
 - `validate_configs.py`: validates config structure and metadata before import.
 
 ## Expected config layout
@@ -36,6 +37,7 @@ Custom input or output paths:
 ```bash
 ./import_configs.py --catalogue ../configs --dbpath subscriptions.db
 ./generate_subscriptions.py --dbpath subscriptions.db --outdir subscriptions
+./create_bypass.py --dbpath subscriptions.db --outdir subscriptions
 ```
 
 Generate client subscriptions:
@@ -50,7 +52,10 @@ Using `make`:
 make check
 make validate
 make rebuild
+make bypass
 ```
+
+`make bypass` validates and imports configs, then asks once per server endpoint for a bypass hostname or IP address and TCP port. For each entered bypass, it rewrites every client subscription with the original URLs plus appended bypass variants that change only the endpoint host and port.
 
 ## What Changed
 
