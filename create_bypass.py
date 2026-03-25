@@ -34,25 +34,36 @@ def normalize_bypass_host(value):
         raise ValueError("invalid host")
 
 
-def prompt_host(source_label):
+def prompt_host(source_label, default_host=None):
     while True:
-        value = input(f"Bypass host/IP for {source_label} (blank to skip): ").strip()
+        if default_host:
+            prompt = (
+                f"Bypass host/IP for {source_label} "
+                f"[{default_host}, '-' to skip]: "
+            )
+        else:
+            prompt = f"Bypass host/IP for {source_label} (blank to skip): "
+
+        value = input(prompt).strip()
         if not value:
+            return default_host
+        if default_host and value == "-":
             return None
         try:
             return normalize_bypass_host(value)
         except ValueError:
             print(
                 "Invalid bypass host. Enter a DNS hostname, IPv4, IPv6 literal, "
-                "or leave blank to skip."
+                "press Enter to use the default, or '-' to skip."
             )
 
 
-def prompt_port(source_label, default_port):
+def prompt_port(source_label, default_port, remembered_port=None):
+    effective_default = remembered_port if remembered_port is not None else default_port
     while True:
-        value = input(f"Bypass TCP port for {source_label} [{default_port}]: ").strip()
+        value = input(f"Bypass TCP port for {source_label} [{effective_default}]: ").strip()
         if not value:
-            return default_port
+            return effective_default
         if value.isdigit() and 1 <= int(value) <= 65535:
             return int(value)
         print("Invalid TCP port. Enter an integer between 1 and 65535.")
@@ -61,6 +72,8 @@ def prompt_port(source_label, default_port):
 def collect_bypass_map(rows):
     bypass_map = {}
     seen_sources = set()
+    default_host = None
+    default_port = None
 
     for row in rows:
         source_key = (row["host"], row["domain"], row["port"])
@@ -69,12 +82,20 @@ def collect_bypass_map(rows):
         seen_sources.add(source_key)
 
         source_label = f'{row["host"]}.{row["domain"]}:{row["port"]}'
-        bypass_host = prompt_host(source_label)
+        bypass_host = prompt_host(source_label, default_host=default_host)
         if not bypass_host:
             continue
 
-        bypass_port = prompt_port(source_label, row["port"])
+        bypass_port = prompt_port(
+            source_label,
+            row["port"],
+            remembered_port=default_port,
+        )
         bypass_map[source_key] = (bypass_host, bypass_port)
+        if default_host is None:
+            default_host = bypass_host
+        if default_port is None:
+            default_port = bypass_port
 
     return bypass_map
 
