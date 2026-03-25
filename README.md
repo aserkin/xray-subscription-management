@@ -6,6 +6,7 @@ Small utility set for building client subscription URLs from Xray VLESS Reality 
 
 - `import_configs.py`: reads Xray server configs from the `configs/*/config.json` layout and rebuilds `subscriptions.db`.
 - `generate_subscriptions.py`: reads `subscriptions.db` and writes per-client plain-text and base64 subscription files under `subscriptions/`.
+- `validate_configs.py`: validates config structure and metadata before import.
 
 ## Expected config layout
 
@@ -47,6 +48,7 @@ Using `make`:
 
 ```bash
 make check
+make validate
 make rebuild
 ```
 
@@ -61,9 +63,21 @@ make rebuild
 
 - `subscriptions.db` and the generated `subscriptions/` directory are ignored by Git because they contain generated and potentially sensitive data.
 - This project currently uses only Python standard library modules.
+- `make rebuild` now runs validation first and stops on validation errors.
+
+## Validation
+
+`validate_configs.py` checks:
+
+- JSON parsing and `inbounds` structure.
+- Presence of Reality-specific fields needed by the importer.
+- Missing or empty `key.pub` and `country.txt` for hosts that expose VLESS Reality inbounds.
+- Duplicate client UUIDs within an inbound.
+- UUIDs reused with different client email labels.
+
+Hosts without VLESS Reality inbounds are reported as informational entries and do not fail validation.
 
 ## Recommended Next Improvements
 
-- Add a small validation command that reports missing `key.pub`, empty `country.txt`, duplicate UUIDs, and malformed Xray configs before import.
 - Add tests with a tiny fixture set covering multiple hosts and multiple VLESS Reality inbounds on one host.
 - Consider normalizing generated filenames if `email` may contain spaces or filesystem-hostile characters.
