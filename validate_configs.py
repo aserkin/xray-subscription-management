@@ -47,9 +47,9 @@ def validate_reality_inbound(host, inbound, host_dir, seen_uuid_emails, errors, 
     country_path = host_dir / "country.txt"
 
     if not key_path.exists():
-        warnings.append(f"{host}: missing key.pub")
+        errors.append(f"{host}: missing key.pub")
     elif not key_path.read_text(encoding="utf-8").strip():
-        warnings.append(f"{host}: key.pub is empty")
+        errors.append(f"{host}: key.pub is empty")
 
     if not country_path.exists():
         warnings.append(f"{host}: missing country.txt")

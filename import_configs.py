@@ -74,6 +74,13 @@ def load_config(path: Path):
         return json.load(handle)
 
 
+def read_required(path: Path, description: str):
+    value = read_optional(path)
+    if not value:
+        raise ValueError(f"Missing required {description}: {path}")
+    return value
+
+
 def choose_first(values):
     if not values:
         return ""
@@ -85,21 +92,26 @@ def choose_first(values):
 def import_host(cursor, cfg_path: Path, args):
     host_dir = cfg_path.parent
     hostname = host_dir.name
-    public_key = read_optional(host_dir / "key.pub")
-    country = read_optional(host_dir / "country.txt")
     config = load_config(cfg_path)
+    country = read_optional(host_dir / "country.txt")
+
+    reality_inbounds = [
+        inbound
+        for inbound in config.get("inbounds", [])
+        if inbound.get("protocol") == "vless"
+        and inbound.get("streamSettings", {}).get("security") == "reality"
+    ]
+    public_key = ""
+    if reality_inbounds:
+        public_key = read_required(host_dir / "key.pub", "public key")
 
     imported_inbounds = 0
     imported_clients = 0
 
-    for inbound in config.get("inbounds", []):
+    for inbound in reality_inbounds:
         protocol = inbound.get("protocol")
         stream = inbound.get("streamSettings", {})
         security = stream.get("security")
-
-        if protocol != "vless" or security != "reality":
-            continue
-
         inbound_tag = inbound.get("tag") or f"untagged-{inbound.get('port', 443)}"
         reality = stream.get("realitySettings", {})
 

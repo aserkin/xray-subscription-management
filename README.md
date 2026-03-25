@@ -16,12 +16,12 @@ The importer expects host folders like this:
 ```text
 ../configs/<host>/
 ├── config.json
-├── key.pub        # optional
+├── key.pub        # required for VLESS Reality hosts
 └── country.txt    # optional
 ```
 
 - `config.json` is the Xray server config.
-- `key.pub` should contain the public Reality key for that host.
+- `key.pub` must contain the public Reality key for any host that exposes a VLESS Reality inbound.
 - `country.txt` is a free-form label used in generated subscription names.
 
 ## Usage
@@ -76,7 +76,8 @@ make bypass
 
 - JSON parsing and `inbounds` structure.
 - Presence of Reality-specific fields needed by the importer.
-- Missing or empty `key.pub` and `country.txt` for hosts that expose VLESS Reality inbounds.
+- Missing or empty `key.pub` for hosts that expose VLESS Reality inbounds.
+- Missing or empty `country.txt` for hosts that expose VLESS Reality inbounds.
 - Duplicate client UUIDs within an inbound.
 - UUIDs reused with different client email labels.
 
