@@ -13,6 +13,7 @@ PRAGMA foreign_keys = ON;
 
 DROP TABLE IF EXISTS CLIENTS;
 DROP TABLE IF EXISTS INBOUNDS;
+DROP TABLE IF EXISTS METADATA;
 
 CREATE TABLE INBOUNDS (
     HOST TEXT NOT NULL,
@@ -47,6 +48,11 @@ CREATE TABLE CLIENTS (
 );
 
 CREATE INDEX IDX_CLIENTS_UUID ON CLIENTS(UUID);
+
+CREATE TABLE METADATA (
+    KEY TEXT PRIMARY KEY,
+    VALUE TEXT NOT NULL
+);
 """
 
 
@@ -60,6 +66,7 @@ def parse_args():
     parser.add_argument("--encryption", default="none")
     parser.add_argument("--headertype", default="none")
     parser.add_argument("--fingerprint", default="chrome")
+    parser.add_argument("--url-prefix")
     return parser.parse_args()
 
 
@@ -87,6 +94,46 @@ def choose_first(values):
     if isinstance(values, list):
         return str(values[0]).strip()
     return str(values).strip()
+
+
+def read_existing_url_prefix(dbpath):
+    db_file = Path(dbpath)
+    if not db_file.exists():
+        return None
+
+    with sqlite3.connect(dbpath) as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            SELECT name
+            FROM sqlite_master
+            WHERE type = 'table' AND name = 'METADATA'
+            """
+        )
+        if cursor.fetchone() is None:
+            return None
+
+        cursor.execute(
+            "SELECT VALUE FROM METADATA WHERE KEY = 'subscription_url_prefix'"
+        )
+        row = cursor.fetchone()
+        if row is None:
+            return None
+        return row[0]
+
+
+def resolve_url_prefix(dbpath, url_prefix):
+    if url_prefix and url_prefix.strip():
+        return url_prefix.strip()
+
+    existing_prefix = read_existing_url_prefix(dbpath)
+    if existing_prefix:
+        return existing_prefix
+
+    raise SystemExit(
+        "--url-prefix is required when importing into a new database. "
+        "This value is stored in subscriptions.db for later user operations."
+    )
 
 
 def import_host(cursor, cfg_path: Path, args):
@@ -175,12 +222,15 @@ def rebuild_database(
     encryption="none",
     headertype="none",
     fingerprint="chrome",
+    url_prefix=None,
 ):
     base = Path(catalogue).expanduser().resolve()
     config_paths = sorted(base.glob("*/config.json"))
 
     if not config_paths:
         raise SystemExit(f"No config.json files found in {base}")
+
+    resolved_url_prefix = resolve_url_prefix(dbpath, url_prefix)
 
     namespace = argparse.Namespace(
         catalogue=str(base),
@@ -189,6 +239,7 @@ def rebuild_database(
         encryption=encryption,
         headertype=headertype,
         fingerprint=fingerprint,
+        url_prefix=resolved_url_prefix,
     )
 
     total_inbounds = 0
@@ -197,6 +248,13 @@ def rebuild_database(
     with sqlite3.connect(dbpath) as conn:
         cursor = conn.cursor()
         cursor.executescript(SCHEMA)
+        cursor.execute(
+            """
+            INSERT INTO METADATA (KEY, VALUE)
+            VALUES ('subscription_url_prefix', ?)
+            """,
+            (resolved_url_prefix,),
+        )
 
         for cfg_path in config_paths:
             imported_inbounds, imported_clients = import_host(cursor, cfg_path, namespace)
@@ -215,6 +273,7 @@ def main():
         encryption=args.encryption,
         headertype=args.headertype,
         fingerprint=args.fingerprint,
+        url_prefix=args.url_prefix,
     )
 
     print(

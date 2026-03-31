@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
 
 import base64
+import sqlite3
 import subprocess
+from pathlib import Path
 
 from generate_subscriptions import normalize_filename_component
-
-
-DEFAULT_URL_PREFIX = ""
 
 
 def render_qr(text):
@@ -25,6 +24,8 @@ def render_qr(text):
 
 
 def build_subscription_details(client_id, email, url_prefix):
+    if not url_prefix or not url_prefix.strip():
+        raise SystemExit("--url-prefix is required")
     filename = f"{normalize_filename_component(email)}.b64"
     subscription_path = f"{client_id}/{filename}"
     subscription_url = f"{url_prefix.rstrip('/')}/{subscription_path}"
@@ -38,6 +39,46 @@ def build_subscription_details(client_id, email, url_prefix):
         "encoded_url": encoded_url,
         "qr_text": qr_text,
     }
+
+
+def read_stored_url_prefix(dbpath):
+    db_file = Path(dbpath)
+    if not db_file.exists():
+        return None
+
+    with sqlite3.connect(dbpath) as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            SELECT name
+            FROM sqlite_master
+            WHERE type = 'table' AND name = 'METADATA'
+            """
+        )
+        if cursor.fetchone() is None:
+            return None
+
+        cursor.execute(
+            "SELECT VALUE FROM METADATA WHERE KEY = 'subscription_url_prefix'"
+        )
+        row = cursor.fetchone()
+        if row is None:
+            return None
+        return row[0]
+
+
+def resolve_url_prefix(dbpath, explicit_url_prefix=None):
+    if explicit_url_prefix and explicit_url_prefix.strip():
+        return explicit_url_prefix.strip()
+
+    stored_url_prefix = read_stored_url_prefix(dbpath)
+    if stored_url_prefix:
+        return stored_url_prefix
+
+    raise SystemExit(
+        "--url-prefix was not provided and no stored subscription URL prefix was found in "
+        f"{dbpath}. Re-run import_configs.py with --url-prefix first."
+    )
 
 
 def print_subscription_details(details):

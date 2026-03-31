@@ -23,7 +23,7 @@ Typical flow:
 
 1. Maintain server configs in `../configs/<host>/config.json`.
 2. Validate them with `validate_configs.py`.
-3. Import the current Reality inbounds and clients into `subscriptions.db`.
+3. On the first import, run `import_configs.py` with `--url-prefix` so the subscription URL prefix is stored in `subscriptions.db`.
 4. Generate subscription files under `subscriptions/`.
 5. Optionally publish `subscriptions/` with your own hosting method.
 
@@ -93,7 +93,7 @@ Default paths match the current repository layout:
 
 ```bash
 ./validate_configs.py
-./import_configs.py
+./import_configs.py --url-prefix https://your-host.example/xray/subscriptions
 ./generate_subscriptions.py
 ./create_bypass.py
 ```
@@ -102,10 +102,17 @@ Custom paths are supported:
 
 ```bash
 ./validate_configs.py --catalogue ../configs
-./import_configs.py --catalogue ../configs --dbpath subscriptions.db
+./import_configs.py --catalogue ../configs --dbpath subscriptions.db --url-prefix https://your-host.example/xray/subscriptions
 ./generate_subscriptions.py --dbpath subscriptions.db --outdir subscriptions
 ./create_bypass.py --dbpath subscriptions.db --outdir subscriptions
 ```
+
+Important:
+
+- when `subscriptions.db` does not exist yet, `import_configs.py` must be called with `--url-prefix`
+- the importer stores that prefix in the database metadata for later use
+- later imports may omit `--url-prefix` and reuse the stored value
+- if you already have an older `subscriptions.db`, rebuild it once with `--url-prefix` to populate the stored metadata
 
 The sync destination can be overridden when needed:
 
@@ -121,14 +128,14 @@ make sync SYNC_DEST=/srv/www/xray/subscriptions/
 Example:
 
 ```bash
-./useradd.py alice
+./useradd.py alice --url-prefix https://your-host.example/xray/subscriptions
 ```
 
 Optional arguments:
 
 - `--id <uuid>`: provide a specific UUID instead of generating one.
 - `--flow <flow>`: override the default `xtls-rprx-vision`.
-- `--url-prefix <url>`: subscription URL prefix.
+- `--url-prefix <url>`: optional override for the stored subscription URL prefix. The concrete deployment URL is intentionally not documented here.
 
 `useradd.py`:
 
@@ -216,6 +223,6 @@ Behavior:
 ## Notes
 
 - `subscriptions.db` and `subscriptions/` are generated artifacts and are ignored by Git.
-- the tools use only the Python standard library, except `useradd.py` relies on the external `qrencode` command to print the ANSI UTF-8 QR code.
+- the tools use only the Python standard library, except `useradd.py` and `showuser.py` rely on the external `qrencode` command to print the ANSI UTF-8 QR code.
 - `make sync` uses `rsync -av --delete --progress`, so files deleted locally are also removed from the destination.
 - `sync-subs.sh` remains an example helper and is not required by the core workflow.

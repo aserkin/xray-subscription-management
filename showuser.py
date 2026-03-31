@@ -4,7 +4,7 @@ import argparse
 import sqlite3
 from pathlib import Path
 
-from user_output import DEFAULT_URL_PREFIX, build_subscription_details, print_subscription_details
+from user_output import build_subscription_details, print_subscription_details, resolve_url_prefix
 
 
 def parse_args():
@@ -14,7 +14,7 @@ def parse_args():
     parser.add_argument("email")
     parser.add_argument("--dbpath", default="subscriptions.db")
     parser.add_argument("--outdir", default="subscriptions")
-    parser.add_argument("--url-prefix", default=DEFAULT_URL_PREFIX)
+    parser.add_argument("--url-prefix")
     return parser.parse_args()
 
 
@@ -39,7 +39,11 @@ def main():
         raise SystemExit(f"Multiple users found for email {args.email}")
 
     client_id, email = rows[0]
-    details = build_subscription_details(client_id, email, args.url_prefix)
+    details = build_subscription_details(
+        client_id,
+        email,
+        resolve_url_prefix(args.dbpath, args.url_prefix),
+    )
     expected_file = Path(args.outdir) / details["subscription_path"]
     if not expected_file.exists():
         raise SystemExit(

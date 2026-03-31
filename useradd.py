@@ -6,7 +6,7 @@ import uuid
 from generate_subscriptions import generate_all_subscriptions
 from import_configs import rebuild_database
 from user_ops import DEFAULT_CATALOGUE, collect_reality_configs, save_config
-from user_output import DEFAULT_URL_PREFIX, build_subscription_details, print_subscription_details
+from user_output import build_subscription_details, print_subscription_details, resolve_url_prefix
 
 
 def parse_args():
@@ -19,12 +19,14 @@ def parse_args():
     parser.add_argument("--catalogue", default=str(DEFAULT_CATALOGUE))
     parser.add_argument("--dbpath", default="subscriptions.db")
     parser.add_argument("--outdir", default="subscriptions")
-    parser.add_argument("--url-prefix", default=DEFAULT_URL_PREFIX)
+    parser.add_argument("--url-prefix")
     parser.add_argument("--domain", default="fp.work.gd")
     parser.add_argument("--encryption", default="none")
     parser.add_argument("--headertype", default="none")
     parser.add_argument("--fingerprint", default="chrome")
     return parser.parse_args()
+
+
 def main():
     args = parse_args()
     client_id = args.client_id or str(uuid.uuid4())
@@ -83,10 +85,15 @@ def main():
         encryption=args.encryption,
         headertype=args.headertype,
         fingerprint=args.fingerprint,
+        url_prefix=args.url_prefix,
     )
     generate_all_subscriptions(args.dbpath, args.outdir)
 
-    details = build_subscription_details(client_id, args.email, args.url_prefix)
+    details = build_subscription_details(
+        client_id,
+        args.email,
+        resolve_url_prefix(args.dbpath, args.url_prefix),
+    )
 
     print(f"Added client to {updated_inbounds} reality inbound(s).")
     if changed_files:
