@@ -6,7 +6,7 @@ import subprocess
 from generate_subscriptions import normalize_filename_component
 
 
-DEFAULT_URL_PREFIX = "https://void.fp.work.gd:10443/xray/subscriptions"
+DEFAULT_URL_PREFIX = ""
 
 
 def render_qr(text):
