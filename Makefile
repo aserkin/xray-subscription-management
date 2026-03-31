@@ -2,8 +2,9 @@ PYTHON ?= python3
 DB ?= subscriptions.db
 OUTDIR ?= subscriptions
 CATALOGUE ?= ../configs
+SYNC_DEST ?= /var/www/html/xray/subscriptions/
 
-.PHONY: help check validate import generate bypass rebuild clean
+.PHONY: help check validate import generate bypass sync rebuild clean
 
 help:
 	@printf '%s\n' \
@@ -13,6 +14,7 @@ help:
 		'  make import    - rebuild the SQLite database from configs' \
 		'  make generate  - generate subscription files from the database' \
 		'  make bypass    - generate subscriptions plus interactive bypass variants' \
+		'  make sync      - mirror subscriptions to $(SYNC_DEST)' \
 		'  make rebuild   - run import and generate' \
 		'  make clean     - remove generated database and subscriptions'
 
@@ -30,6 +32,9 @@ generate:
 
 bypass: validate import
 	./create_bypass.py --dbpath "$(DB)" --outdir "$(OUTDIR)"
+
+sync:
+	rsync -av --delete --progress ./$(OUTDIR)/ "$(SYNC_DEST)"
 
 rebuild: validate import generate
 

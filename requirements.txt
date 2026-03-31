@@ -1,0 +1,27 @@
+# Python requirements
+# -------------------
+# This project uses only the Python standard library.
+# No third-party pip packages are required.
+#
+# Suggested interpreter:
+#   python3 >= 3.9
+#
+# Example:
+#   python3 -m pip install -r requirements.txt
+# This will install nothing, by design.
+
+
+# OS / system package requirements
+# -------------------------------
+# Debian/Ubuntu package names:
+#
+#   python3
+#   make
+#   rsync
+#   qrencode
+#   sqlite3
+#
+# Notes:
+# - `qrencode` is required by `useradd.py` and `showuser.py` for ANSI UTF-8 QR output.
+# - `rsync` is required by `make sync` and `sync-subs.sh`.
+# - `sqlite3` is useful for local inspection and validation of `subscriptions.db`.

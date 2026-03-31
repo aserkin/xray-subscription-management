@@ -84,6 +84,7 @@ The generator removes stale files in active user directories and removes subscri
 - `make generate`: generate subscriptions from the database.
 - `make rebuild`: run `validate`, `import`, and `generate`.
 - `make bypass`: run `validate`, `import`, and then append bypass variants interactively.
+- `make sync`: mirror `subscriptions/` to `/var/www/html/xray/subscriptions/` by default.
 - `make clean`: remove `subscriptions.db` and `subscriptions/`.
 
 ## Direct Script Usage
@@ -104,6 +105,13 @@ Custom paths are supported:
 ./import_configs.py --catalogue ../configs --dbpath subscriptions.db
 ./generate_subscriptions.py --dbpath subscriptions.db --outdir subscriptions
 ./create_bypass.py --dbpath subscriptions.db --outdir subscriptions
+```
+
+The sync destination can be overridden when needed:
+
+```bash
+make sync
+make sync SYNC_DEST=/srv/www/xray/subscriptions/
 ```
 
 ## User Management
@@ -215,4 +223,5 @@ Behavior:
 
 - `subscriptions.db` and `subscriptions/` are generated artifacts and are ignored by Git.
 - the tools use only the Python standard library, except `useradd.py` relies on the external `qrencode` command to print the ANSI UTF-8 QR code.
-- `sync-subs.sh` is only an example publishing helper and is not required by the core workflow.
+- `make sync` uses `rsync -av --delete --progress`, so files deleted locally are also removed from the destination.
+- `sync-subs.sh` remains an example helper and is not required by the core workflow.
