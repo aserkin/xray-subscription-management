@@ -130,12 +130,6 @@ Optional arguments:
 - `--flow <flow>`: override the default `xtls-rprx-vision`.
 - `--url-prefix <url>`: subscription URL prefix.
 
-Default subscription URL prefix:
-
-```text
-https://void.fp.work.gd:10443/xray/subscriptions
-```
-
 `useradd.py`:
 
 - adds the client to every VLESS Reality inbound found in `../configs`
